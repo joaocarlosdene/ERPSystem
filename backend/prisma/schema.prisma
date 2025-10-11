@@ -14,13 +14,66 @@ datasource db {
   url      = env("DATABASE_URL")
 }
  
-model User{
-  id String @id @default(uuid())
-  name String
-  email String @unique
-  password String
-  created_at DateTime? @default(now())
-  updated_at DateTime? @default(now())
+// ------------------------------------------------------
+// 🔐 AUTHENTICAÇÃO E CONTROLE DE ACESSO
+// ------------------------------------------------------
 
-  @@map("users")
+model User {
+  id            Int           @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  password      String
+  isMaster      Boolean        @default(false)  // define o usuário principal do sistema
+  roleId        Int?           
+  role          Role?          @relation(fields: [roleId], references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  sessions      Session[]
+  auditLogs     AuditLog[]
+}
+
+model Role {
+  id             Int            @id @default(autoincrement())
+  name           String          @unique
+  description    String?
+  permissions    RolePermission[]
+  users          User[]
+}
+
+model Permission {
+  id          Int              @id @default(autoincrement())
+  name        String            @unique // ex: "CREATE_USER", "VIEW_REPORTS"
+  description String?
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  id             Int           @id @default(autoincrement())
+  roleId         Int
+  permissionId   Int
+  role           Role          @relation(fields: [roleId], references: [id])
+  permission     Permission    @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+}
+
+model Session {
+  id          Int        @id @default(autoincrement())
+  userId      Int
+  token       String      @unique
+  createdAt   DateTime    @default(now())
+  expiresAt   DateTime
+  user        User        @relation(fields: [userId], references: [id])
+}
+
+// Logs de auditoria (quem fez o quê e quando)
+model AuditLog {
+  id          Int        @id @default(autoincrement())
+  userId      Int?
+  action      String
+  entity      String?
+  entityId    Int?
+  timestamp   DateTime   @default(now())
+  details     String?
+  user        User?       @relation(fields: [userId], references: [id])
 }
