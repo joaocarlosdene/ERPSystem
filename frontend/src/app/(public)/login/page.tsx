@@ -17,7 +17,7 @@ export default function LoginPage() {
 
     try {
       // 🔹 Envia os dados de login ao backend
-      const response = await api.post("/auth/login", { email, password });
+      const response = await api.post("/users", { email, password });
 
       const { token, user } = response.data;
 
@@ -54,7 +54,7 @@ export default function LoginPage() {
               className="mt-1 block w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              //required
+              required
               placeholder="seuemail@empresa.com"
             />
           </div>
@@ -66,14 +66,13 @@ export default function LoginPage() {
               className="mt-1 block w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              //required
+              required
               placeholder="••••••••"
             />
           </div>
 
           <button
             type="submit"
-            onClick={() => router.push("/dashboard")}
             disabled={loading}
             className={`w-full py-2 px-4 rounded-lg text-white font-semibold transition ${
               loading
