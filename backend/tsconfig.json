@@ -22,7 +22,8 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "lib": ["ESNext"],
-    "types": ["node"]
+    "types": ["node"],
+
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

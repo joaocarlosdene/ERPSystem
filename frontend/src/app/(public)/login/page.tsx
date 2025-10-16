@@ -17,18 +17,21 @@ export default function LoginPage() {
 
     try {
       // 🔹 Envia os dados de login ao backend
-      const response = await api.post("/users", { email, password });
+      const response = await api.post("/login", { email, password });
 
-      const { token, user } = response.data;
+      const { accessToken, refreshToken } = response.data;
+      localStorage.setItem("token", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+
 
       // 🔹 Armazena o token JWT localmente
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
+      // localStorage.setItem("token", token);
+      //localStorage.setItem("user", JSON.stringify(user));
 
       toast.success("Login realizado com sucesso!");
 
       // 🔹 Redireciona para o dashboard
-      router.push("/dashboard");
+      setTimeout(() => router.push("/dashboard"), 1500);
     } catch (error: any) {
       console.error("Erro no login:", error);
       toast.error(
@@ -74,11 +77,10 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-2 px-4 rounded-lg text-white font-semibold transition ${
-              loading
+            className={`w-full py-2 px-4 rounded-lg text-white font-semibold transition ${loading
                 ? "bg-blue-400 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
-            }`}
+              }`}
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>

@@ -30,7 +30,19 @@ model User {
   updatedAt     DateTime       @updatedAt
   sessions      Session[]
   auditLogs     AuditLog[]
+  refreshTokens RefreshToken[]
 }
+
+model RefreshToken {
+  id           Int       @id @default(autoincrement())
+  token        String    @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       Int
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  revoked      Boolean   @default(false)
+}
+
 
 model Role {
   id             Int            @id @default(autoincrement())
