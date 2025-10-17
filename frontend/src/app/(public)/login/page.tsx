@@ -23,11 +23,6 @@ export default function LoginPage() {
       localStorage.setItem("token", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
 
-
-      // 🔹 Armazena o token JWT localmente
-      // localStorage.setItem("token", token);
-      //localStorage.setItem("user", JSON.stringify(user));
-
       toast.success("Login realizado com sucesso!");
 
       // 🔹 Redireciona para o dashboard
