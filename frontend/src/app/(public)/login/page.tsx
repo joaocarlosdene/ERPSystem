@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/services/api"; // Arquivo axios configurado (ex: baseURL)
 import toast from "react-hot-toast"; // opcional — para mensagens visuais elegantes
+import Cookies from "js-cookie"
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,6 +23,10 @@ export default function LoginPage() {
       const { accessToken, refreshToken } = response.data;
       localStorage.setItem("token", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
+
+      // depois de receber token no login
+      Cookies.set("token", accessToken, { expires: 1 }); // expira em 1 dia
+      Cookies.set("refreshToken", refreshToken, { expires: 7 });
 
       toast.success("Login realizado com sucesso!");
 
@@ -73,8 +78,8 @@ export default function LoginPage() {
             type="submit"
             disabled={loading}
             className={`w-full py-2 px-4 rounded-lg text-white font-semibold transition ${loading
-                ? "bg-blue-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
+              ? "bg-blue-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
               }`}
           >
             {loading ? "Entrando..." : "Entrar"}

@@ -21,13 +21,12 @@ datasource db {
 model User {
   id            Int           @id @default(autoincrement())
   name          String
-  email         String         @unique
+  email         String        @unique
   password      String
-  isMaster      Boolean        @default(false)  // define o usuário principal do sistema
-  roleId        Int?           
-  role          Role?          @relation(fields: [roleId], references: [id])
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  isMaster      Boolean       @default(false) // define o usuário principal do sistema
+  roles         Role[]        @relation("UserRoles") // relação muitos-para-muitos
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
   sessions      Session[]
   auditLogs     AuditLog[]
   refreshTokens RefreshToken[]
@@ -45,11 +44,11 @@ model RefreshToken {
 
 
 model Role {
-  id             Int            @id @default(autoincrement())
-  name           String          @unique
-  description    String?
-  permissions    RolePermission[]
-  users          User[]
+  id          Int            @id @default(autoincrement())
+  name        String         @unique
+  description String?
+  permissions RolePermission[]
+  users       User[]         @relation("UserRoles") // relação muitos-para-muitos
 }
 
 model Permission {
