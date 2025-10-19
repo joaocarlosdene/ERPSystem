@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/services/api"; // seu axios configurado
 import toast from "react-hot-toast";
+import { useAuth } from "@/context/AuthContext"; // hook do contexto
+import { useEffect } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, user } = useAuth(); // usa login do AuthContext
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,16 +18,12 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 🔹 Envia login e recebe cookies (não precisa salvar token manualmente)
-      const response = await api.post(
-        "/login",
-        { email, password },
-        { withCredentials: true } // 🔥 permite cookies httpOnly
-      );
+      // 🔹 Login via AuthContext (aguarda a atualização do estado)
+      await login(email, password);
 
       toast.success("Login realizado com sucesso!");
 
-      // 🔹 Redireciona após sucesso
+      // 🔹 Redireciona apenas após o contexto atualizar user
       router.push("/dashboard");
     } catch (error: any) {
       console.error("Erro no login:", error);
@@ -36,6 +34,13 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // Se já estiver logado, redireciona automaticamente
+  useEffect(() => {
+    if (user) {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -72,11 +77,10 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-2 px-4 rounded-lg text-white font-semibold transition ${
-              loading
+            className={`w-full py-2 px-4 rounded-lg text-white font-semibold transition ${loading
                 ? "bg-blue-400 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
-            }`}
+              }`}
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>

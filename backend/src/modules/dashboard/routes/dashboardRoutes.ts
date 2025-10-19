@@ -9,22 +9,29 @@ const router = Router();
  * Apenas usuários autenticados com roles permitidas
  */
 router.get(
-  "/",
+  "/dashboard",
   authenticateToken, // verifica se o usuário está logado
-  authorizeRoles("master", "financeiro", "gestao", "producao"), // verifica se o usuário tem permissão
+  authorizeRoles("master", "FINANCEIRO", "gestao", "producao"), // verifica se o usuário tem permissão
   (req: Request, res: Response) => {
     const user = req.user;
 
+    if (!user) {
+      return res.status(401).json({ message: "Usuário não encontrado." });
+    }
+
+    // Inicializa roles como array vazio caso não exista
+    const roles = user.roles || [];
+
     // Personaliza dashboard conforme roles
     const dashboardData: Record<string, boolean> = {
-      financeiro: user?.roles.includes("financeiro") || user?.isMaster || false,
-      gestao: user?.roles.includes("gestao") || user?.isMaster || false,
-      producao: user?.roles.includes("producao") || user?.isMaster || false,
-      rh: user?.roles.includes("rh") || user?.isMaster || false,
-      master: user?.isMaster || false,
+      financeiro: roles.includes("FINANCEIRO") || user.isMaster,
+      gestao: roles.includes("gestao") || user.isMaster,
+      producao: roles.includes("producao") || user.isMaster,
+      rh: roles.includes("rh") || user.isMaster,
+      master: user.isMaster,
     };
 
-    res.json({
+    return res.status(200).json({
       message: "Dashboard carregado com sucesso.",
       access: dashboardData,
     });

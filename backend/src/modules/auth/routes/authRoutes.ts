@@ -64,6 +64,7 @@ authRoutes.post("/login", async (req, res) => {
         roles: roleNames,
         isMaster: user.isMaster,
       },
+      token: accessToken,
     });
   } catch (err) {
     console.error(err);

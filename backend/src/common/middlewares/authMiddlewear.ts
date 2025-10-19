@@ -86,7 +86,16 @@ export async function loginUser(email: string, password: string) {
 
   const refreshToken = await generateRefreshToken(user.id);
 
-  return { accessToken, refreshToken, user };
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      email: user.email,
+      roles: roleNames,
+      isMaster: user.isMaster,
+    },
+  };
 }
 
 /* ==========================================================
@@ -113,13 +122,11 @@ export async function refreshAccessToken(refreshToken: string) {
 
   const roleNames = user.roles.map((r) => r.name);
 
-  const newAccessToken = await generateAccessToken({
+  return await generateAccessToken({
     id: user.id,
     roles: roleNames,
     isMaster: user.isMaster,
   });
-
-  return newAccessToken;
 }
 
 /* ==========================================================
@@ -137,8 +144,8 @@ export async function logoutUser(refreshToken: string) {
 ========================================================== */
 
 export function authenticateToken(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader?.split(" ")[1];
+  // ✅ Suporta token via cookie ou header Authorization
+  const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({ message: "Token não fornecido." });
@@ -154,7 +161,7 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 }
 
 /* ==========================================================
-   🧩 VERIFICAÇÃO DE ROLE (PERMISSÕES)
+   🧩 VERIFICAÇÃO DE ROLES (PERMISSÕES)
 ========================================================== */
 
 export function authorizeRoles(...allowedRoles: string[]) {
@@ -163,8 +170,8 @@ export function authorizeRoles(...allowedRoles: string[]) {
 
     if (!user) return res.status(401).json({ message: "Não autenticado." });
 
-    const hasPermission =
-      user.isMaster || user.roles.some((r) => allowedRoles.includes(r));
+    // ✅ Mestre sempre tem acesso
+    const hasPermission = user.isMaster || user.roles.some((r) => allowedRoles.includes(r));
 
     if (!hasPermission) {
       return res.status(403).json({ message: "Acesso negado." });
