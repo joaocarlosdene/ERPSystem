@@ -46,27 +46,13 @@ model RefreshToken {
 model Role {
   id          Int            @id @default(autoincrement())
   name        String         @unique
+  active    Boolean  @default(true)
   description String?
-  permissions RolePermission[]
+  canAccessDashboard Boolean @default(false)
   users       User[]         @relation("UserRoles") // relação muitos-para-muitos
 }
 
-model Permission {
-  id          Int              @id @default(autoincrement())
-  name        String            @unique // ex: "CREATE_USER", "VIEW_REPORTS"
-  description String?
-  roles       RolePermission[]
-}
 
-model RolePermission {
-  id             Int           @id @default(autoincrement())
-  roleId         Int
-  permissionId   Int
-  role           Role          @relation(fields: [roleId], references: [id])
-  permission     Permission    @relation(fields: [permissionId], references: [id])
-
-  @@unique([roleId, permissionId])
-}
 
 model Session {
   id          Int        @id @default(autoincrement())
