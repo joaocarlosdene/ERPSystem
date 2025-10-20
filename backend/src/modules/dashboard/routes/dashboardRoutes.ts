@@ -22,7 +22,7 @@ router.get(
       });
 
       const rolesValidas = rolesAtivas.map((r) => r.name.toLowerCase());
-      const userRoles = user.roles.map((r) => r.toLowerCase());
+      const userRoles = user.roles.map((r) => r.toLowerCase()); 
 
       // 🔹 Monta o objeto de acesso
       const dashboardAccess: Record<string, boolean> = {};
