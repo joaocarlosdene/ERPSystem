@@ -1,22 +1,10 @@
-"use client";
+import Layout from "@/components/Layout";
 
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-
-export default function FinanceiroPage() {
-  const { user, loading, isAuthorized } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading) {
-      if (!user) router.push("/login");
-      else if (!isAuthorized(["financeiro", "master"])) router.push("/dashboard");
-    }
-  }, [loading, user, router, isAuthorized]);
-
-  if (loading) return <div>Carregando...</div>;
-  if (!user) return null;
-
-  return <div>📊 Área Financeira — acesso restrito.</div>;
+export default function Home() {
+  return (
+    <Layout>
+      <h1 className="text-2xl font-bold">Bem-vindo ao sistema</h1>
+      <p className="text-gray-400 mt-2">Selecione um módulo no menu lateral.</p>
+    </Layout>
+  );
 }
