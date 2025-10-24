@@ -34,7 +34,7 @@ const Header: React.FC = () => {
   }, []);
 
   const menuItems = [
-    { section: "ERP", items: ["Pedidos", "Faturamento", "Clientes"] },
+    { section: "ERP", items: ["Compras", "Estoque", "Vendas", "Faturamento"] },
     { section: "Financeiro", items: ["Contas a Pagar", "Contas a Receber", "Relatórios"] },
     { section: "RH", items: ["Funcionários", "Folha de Pagamento", "Benefícios"] },
     { section: "CRM", items: ["Leads", "Oportunidades", "Campanhas"] },
