@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 const Header: React.FC = () => {
   const [query, setQuery] = useState("");
@@ -8,6 +9,7 @@ const Header: React.FC = () => {
   const [showMessages, setShowMessages] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [status, setStatus] = useState<"online" | "busy" | "offline">("online");
+  const { logout } = useAuth();
 
   const fullName = "João Silva";
   const firstName = fullName.split(" ")[0] || fullName;
@@ -233,10 +235,7 @@ const Header: React.FC = () => {
 
               <div className="border-t border-gray-800 mt-1">
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // logout
-                  }}
+                  onClick={logout}
                   className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-600/20 hover:text-red-500 transition"
                 >
                   ⏻ Sair

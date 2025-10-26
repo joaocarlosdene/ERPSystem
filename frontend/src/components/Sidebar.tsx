@@ -1,25 +1,102 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+
+
+
+
+// Tipagem aprimorada
+interface SubItem {
+  label: string;
+  path: string;
+}
 
 interface MenuItem {
   title: string;
-  subItems?: string[];
+  path?: string;
+  subItems?: SubItem[];
 }
 
 const menu: MenuItem[] = [
-  { title: "Dashboard" },
-  { title: "ERP", subItems: ["Compras", "Estoque", "Vendas", "Faturamento"] },
-  { title: "MRP", subItems: ["Planejamento", "Produção", "Materiais"] },
-  { title: "Financeiro", subItems: ["Contas a Pagar", "Contas a Receber", "Fluxo de Caixa"] },
-  { title: "RH", subItems: ["Funcionários", "Folha de Pagamento", "Benefícios"] },
-  { title: "CRM", subItems: ["Clientes", "Propostas", "Pós-venda"] },
-  { title: "Gestão", subItems: ["Projetos", "Documentos", "Auditorias"] },
-  { title: "Risco & Previsão", subItems: ["Simulações", "Análises", "Relatórios"] },
-  { title: "Comunicação", subItems: ["Chat Interno", "Calendário", "Tarefas"] },
-  { title: "Configurações", subItems: ["Usuários", "Permissões", "Preferências"] },
+  { title: "Dashboard", path: "/dashboard" },
+  {
+    title: "ERP",
+    subItems: [
+      { label: "Compras", path: "erp/compras" },
+      { label: "Estoque", path: "erp/estoque" },
+      { label: "Vendas", path: "erp/vendas" },
+      { label: "Faturamento", path: "/erp/Faturamento" }
+    ]
+  },
+  {
+    title: "MRP",
+    subItems: [
+      { label: "Planejamento", path: "/mrp/planejamento" },
+      { label: "Producao", path: "/mrp/producao" },
+      { label: "Materiais", path: "/mrp/materiais" },
+    ]
+  },
+  {
+    title: "Financeiro",
+    subItems: [
+      { label: "Contas a Pagar", path: "/financeiro/contasapagar" },
+      { label: "Contas a Receber", path: "/financeiro/contasareceber" },
+      { label: "Fluxo de Caixa", path: "/financeiro/fluxodecaixa" },
+    ]
+  },
+  {
+    title: "Departamento Pessoal",
+    subItems: [
+      { label: "Funcionarios", path: "/dp/funcionarios" },
+      { label: "Folha de Pagamentos", path: "/dp/estoque" },
+      { label: "Beneficios", path: "/dp/vendas" },
+    ]
+  },
+  {
+    title: "CRM",
+    subItems: [
+      { label: "Clientes", path: "/crm/compras" },
+      { label: "Propostas", path: "/crm/estoque" },
+      { label: "Pos-Venda", path: "/crm/vendas" },
+    ]
+  },
+  {
+    title: "Gestao",
+    subItems: [
+      { label: "Projetos", path: "/gestao/compras" },
+      { label: "Documentos", path: "/gestao/estoque" },
+      { label: "Auditorias", path: "/gestao/vendas" },
+    ]
+  },
+  {
+    title: "Risco & Previsao",
+    subItems: [
+      { label: "Simulacao", path: "/rp/compras" },
+      { label: "Analise", path: "/rp/estoque" },
+      { label: "Relatorios", path: "/rp/vendas" },
+    ]
+  },
+  {
+    title: "Comunicacao",
+    subItems: [
+      { label: "Chat Interno", path: "/comunicacao/compras" },
+      { label: "Calendario", path: "/communication/calendar" },
+      { label: "Tarefas", path: "/comunicacao/vendas" },
+    ]
+  },
+  {
+    title: "Configuracoes",
+    subItems: [
+      { label: "Usuarios", path: "/settings/users" },
+      { label: "Roles", path: "/settings/roles" },
+      { label: "Permissoes", path: "/configuracao/permisoes" },
+      { label: "Preferencias", path: "/configuracao/preferencias" },
+    ]
+  },
 ];
 
 const Sidebar: React.FC = () => {
+  const router = useRouter();
   const [open, setOpen] = useState<string | null>(null);
 
   return (
@@ -49,10 +126,11 @@ const Sidebar: React.FC = () => {
               <div className="bg-gray-950">
                 {item.subItems.map((sub) => (
                   <button
-                    key={sub}
+                    key={sub.label}
+                    onClick={() => router.push(sub.path)} // ✅ Navegação de subitem
                     className="block w-full text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white"
                   >
-                    {sub}
+                    {sub.label}
                   </button>
                 ))}
               </div>

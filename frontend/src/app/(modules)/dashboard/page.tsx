@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
+import Layout from "@/components/Layout";
 
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
@@ -40,6 +41,7 @@ export default function DashboardPage() {
   if (!access) return <p>Acesso negado</p>;
 
   return (
+    <Layout>
     <div>
       <h1>Bem-vindo ao Dashboard</h1>
       <p>Usuário: {user!.id}</p>
@@ -57,5 +59,6 @@ export default function DashboardPage() {
 
       <button onClick={logout}>Sair</button>
     </div>
+    </Layout>
   );
 }
