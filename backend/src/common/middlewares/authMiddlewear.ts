@@ -3,17 +3,19 @@ import bcrypt from "bcryptjs";
 import type { Request, Response, NextFunction } from "express";
 import prisma from "../../config/lib/prisma.js";
 
+/* ==========================================================
+   🔐 CONFIGURAÇÕES
+========================================================== */
 const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
-const ACCESS_TOKEN_EXPIRATION = "15m";
-const REFRESH_TOKEN_EXPIRATION_DAYS = 7;
+const ACCESS_TOKEN_EXPIRATION = "15m"; // 15 minutos
+const REFRESH_TOKEN_EXPIRATION_DAYS = 7; // 7 dias
 
 /* ==========================================================
    🔐 TIPAGENS
 ========================================================== */
-
 interface DecodedUser {
-  userId: number;
+  userId: string; // agora é string (cuid)
   roles: string[];
   isMaster: boolean;
 }
@@ -29,9 +31,8 @@ declare global {
 /* ==========================================================
    🔐 GERAÇÃO DE TOKENS
 ========================================================== */
-
 export async function generateAccessToken(user: {
-  id: number;
+  id: string;
   roles: string[];
   isMaster: boolean;
 }) {
@@ -46,7 +47,7 @@ export async function generateAccessToken(user: {
   );
 }
 
-export async function generateRefreshToken(userId: number) {
+export async function generateRefreshToken(userId: string) {
   const token = jwt.sign({ userId }, JWT_REFRESH_SECRET, {
     expiresIn: `${REFRESH_TOKEN_EXPIRATION_DAYS}d`,
   });
@@ -55,7 +56,11 @@ export async function generateRefreshToken(userId: number) {
   expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRATION_DAYS);
 
   await prisma.refreshToken.create({
-    data: { userId, token, expiresAt },
+    data: {
+      userId, // string agora
+      token,
+      expiresAt,
+    },
   });
 
   return token;
@@ -64,7 +69,6 @@ export async function generateRefreshToken(userId: number) {
 /* ==========================================================
    🔑 LOGIN
 ========================================================== */
-
 export async function loginUser(email: string, password: string) {
   const user = await prisma.user.findUnique({
     where: { email },
@@ -101,7 +105,6 @@ export async function loginUser(email: string, password: string) {
 /* ==========================================================
    🔁 REFRESH TOKEN
 ========================================================== */
-
 export async function refreshAccessToken(refreshToken: string) {
   const savedToken = await prisma.refreshToken.findUnique({
     where: { token: refreshToken },
@@ -111,7 +114,7 @@ export async function refreshAccessToken(refreshToken: string) {
     throw new Error("Refresh token inválido ou expirado.");
   }
 
-  const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as { userId: number };
+  const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as { userId: string };
 
   const user = await prisma.user.findUnique({
     where: { id: decoded.userId },
@@ -132,7 +135,6 @@ export async function refreshAccessToken(refreshToken: string) {
 /* ==========================================================
    🚪 LOGOUT
 ========================================================== */
-
 export async function logoutUser(refreshToken: string) {
   await prisma.refreshToken.deleteMany({
     where: { token: refreshToken },
@@ -142,9 +144,7 @@ export async function logoutUser(refreshToken: string) {
 /* ==========================================================
    🧭 MIDDLEWARE DE AUTENTICAÇÃO
 ========================================================== */
-
 export function authenticateToken(req: Request, res: Response, next: NextFunction) {
-  // ✅ Suporta token via cookie ou header Authorization
   const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
 
   if (!token) {
@@ -163,14 +163,13 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 /* ==========================================================
    🧩 VERIFICAÇÃO DE ROLES (PERMISSÕES)
 ========================================================== */
-
 export function authorizeRoles(...allowedRoles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     const user = req.user;
 
     if (!user) return res.status(401).json({ message: "Não autenticado." });
 
-    // ✅ Mestre sempre tem acesso
+    // ✅ Usuário master sempre tem acesso
     const hasPermission = user.isMaster || user.roles.some((r) => allowedRoles.includes(r));
 
     if (!hasPermission) {

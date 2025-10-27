@@ -80,7 +80,7 @@ export default function CreateUserPage() {
       });
 
       setSuccess("Usuário criado com sucesso!");
-      setTimeout(() => router.push("/login"), 1500);
+      setTimeout(() => router.push("/settings/users"), 1500);
     } catch (err: any) {
       setError(
         err.response?.data?.message ||

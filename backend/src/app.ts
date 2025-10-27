@@ -8,6 +8,7 @@ import { roleRoutes } from "./modules/role/routes/roleRoutes.js";
 import { errorHandler } from "./common/middlewares/errorHandler.js";
 import { dashboardRoutes } from "./modules/dashboard/routes/dashboardRoutes.js";
 import { validateRoutes } from "./modules/auth/validators/authValidate.js";
+import { calendarRoutes } from "./modules/calendar/routes/calendarRoutes.js";
 
 export const app = express();
 
@@ -28,6 +29,7 @@ app.use("/", roleRoutes);
 app.use("/auth", authRoutes);
 app.use("/auth", validateRoutes);  // validate /check session
 app.use("/", dashboardRoutes); // protegida
+app.use("/calendar", calendarRoutes)
 
 
 // Middleware de erros

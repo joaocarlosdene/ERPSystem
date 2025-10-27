@@ -11,13 +11,10 @@ userRoutes.get("/users", async (req: Request, res: Response, next: NextFunction)
   try {
     const users = await prisma.user.findMany({
       include: {
-        roles: {
-          select: { name: true } // pega apenas o nome das roles
-        }
+        roles: { select: { name: true } }
       }
     });
 
-    // Formata para retornar apenas nomes das roles
     const formattedUsers = users.map((u) => ({
       id: u.id,
       name: u.name,
@@ -28,7 +25,6 @@ userRoutes.get("/users", async (req: Request, res: Response, next: NextFunction)
     }));
 
     res.json(formattedUsers);
-
   } catch (error) {
     next(error);
   }
@@ -50,14 +46,12 @@ userRoutes.post("/users", async (req: Request, res: Response, next: NextFunction
       return res.status(409).json({ message: "Este e-mail já está registrado." });
     }
 
-    // Primeiro usuário = Master automático
     const userCount = await prisma.user.count();
     const isFirstUser = userCount === 0;
     const finalIsMaster = isFirstUser ? true : Boolean(isMaster);
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Cria usuário com roles (muitos-para-muitos)
     const userData: any = {
       name,
       email,
@@ -65,18 +59,17 @@ userRoutes.post("/users", async (req: Request, res: Response, next: NextFunction
       isMaster: finalIsMaster,
     };
 
-    // Adiciona roles somente se o array existir e não estiver vazio
+    // Adiciona roles se fornecidas
     if (roles && Array.isArray(roles) && roles.length > 0) {
       userData.roles = {
-        connect: roles.map((roleId: number) => ({ id: roleId })),
+        connect: roles.map((roleId: string) => ({ id: roleId })),
       };
     }
 
     const newUser = await prisma.user.create({
       data: userData,
-      include: { roles: true }, // inclui roles para retornar nomes
+      include: { roles: true },
     });
-
 
     return res.status(201).json({
       message: isFirstUser
@@ -101,10 +94,14 @@ userRoutes.post("/users", async (req: Request, res: Response, next: NextFunction
 ============================= */
 userRoutes.put("/users/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Number(req.params.id);
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: "ID do usuário é obrigatório." });
+    }
+
     const { name, email, password, roles, isMaster } = req.body;
 
-    const user = await prisma.user.findUnique({ where: { id }, include: { roles: true } });
+    const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return res.status(404).json({ message: "Usuário não encontrado." });
 
     const updatedData: any = {
@@ -114,19 +111,17 @@ userRoutes.put("/users/:id", async (req: Request, res: Response, next: NextFunct
       password: password ? await bcrypt.hash(password, 10) : user.password,
     };
 
-    // Adiciona roles somente se fornecido
-    if (roles && Array.isArray(roles) && roles.length > 0) {
+    if (roles && Array.isArray(roles)) {
       updatedData.roles = {
-        set: roles.map((roleId: number) => ({ id: roleId })), // substitui roles existentes
+        set: roles.map((roleId: string) => ({ id: roleId })),
       };
     }
 
     const updatedUser = await prisma.user.update({
       where: { id },
       data: updatedData,
-      include: { roles: true }, // inclui roles para retornar nomes
+      include: { roles: true },
     });
-
 
     return res.json({
       message: "Usuário atualizado com sucesso.",
@@ -144,12 +139,16 @@ userRoutes.put("/users/:id", async (req: Request, res: Response, next: NextFunct
   }
 });
 
+
 /* =============================
    DELETE /users/:id — Deletar um usuário
 ============================= */
 userRoutes.delete("/users/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Number(req.params.id);
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: "ID do usuário é obrigatório." });
+    }
 
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return res.status(404).json({ message: "Usuário não encontrado." });
@@ -161,5 +160,6 @@ userRoutes.delete("/users/:id", async (req: Request, res: Response, next: NextFu
     next(error);
   }
 });
+
 
 export { userRoutes };

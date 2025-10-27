@@ -19,12 +19,14 @@ datasource db {
 // ------------------------------------------------------
 
 model User {
-  id            Int           @id @default(autoincrement())
+  id            String           @id @default(cuid())
   name          String
   email         String        @unique
   password      String
   isMaster      Boolean       @default(false) // define o usuário principal do sistema
   roles         Role[]        @relation("UserRoles") // relação muitos-para-muitos
+  tasks         UserTask[] // relação N:N com Task
+  calendars     Calendar[] // calendários criados pelo usuário
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   sessions      Session[]
@@ -33,10 +35,10 @@ model User {
 }
 
 model RefreshToken {
-  id           Int       @id @default(autoincrement())
+  id           String       @id @default(cuid())
   token        String    @unique
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       Int
+  userId       String
   expiresAt    DateTime
   createdAt    DateTime  @default(now())
   revoked      Boolean   @default(false)
@@ -44,7 +46,7 @@ model RefreshToken {
 
 
 model Role {
-  id          Int            @id @default(autoincrement())
+  id          String        @id @default(cuid())
   name        String         @unique
   active    Boolean  @default(true)
   description String?
@@ -53,10 +55,50 @@ model Role {
 }
 
 
+// ------------------------------------------------------
+// 🔐 CALENDARIO, TASKS E PRIORIDADES DE TASKS
+// ------------------------------------------------------
+model Calendar {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  tasks     Task[]
+  createdAt DateTime @default(now())
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  priority    Priority   @default(MEDIUM)
+  color       String     // ex: "#FF0000" ou "bg-red-500"
+  calendarId  String
+  calendar    Calendar   @relation(fields: [calendarId], references: [id])
+  users       UserTask[] // usuários atribuídos à tarefa
+  createdAt   DateTime   @default(now())
+}
+
+model UserTask {
+  userId String
+  taskId String
+  user   User @relation(fields: [userId], references: [id])
+  task   Task @relation(fields: [taskId], references: [id])
+  @@id([userId, taskId])
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 
 model Session {
-  id          Int        @id @default(autoincrement())
-  userId      Int
+  id          String        @id @default(cuid())
+  userId      String
   token       String      @unique
   createdAt   DateTime    @default(now())
   expiresAt   DateTime
@@ -65,8 +107,8 @@ model Session {
 
 // Logs de auditoria (quem fez o quê e quando)
 model AuditLog {
-  id          Int        @id @default(autoincrement())
-  userId      Int?
+  id          String        @id @default(cuid())
+  userId      String?
   action      String
   entity      String?
   entityId    Int?

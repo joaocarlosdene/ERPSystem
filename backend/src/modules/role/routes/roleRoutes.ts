@@ -3,9 +3,9 @@ import prisma from "../../../config/lib/prisma.js";
 
 const roleRoutes = express.Router();
 
-/* =============================
-   GET /roles — Listar todas as roles
-============================= */
+/* ==========================================================
+   🔹 GET /roles — Listar todas as roles
+========================================================== */
 roleRoutes.get("/roles", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const roles = await prisma.role.findMany({
@@ -14,28 +14,39 @@ roleRoutes.get("/roles", async (req: Request, res: Response, next: NextFunction)
         name: true,
         canAccessDashboard: true,
         description: true,
+        //createdAt: true, // ✅ só se existir no schema
       },
+      orderBy: { name: "asc" },
     });
+
     res.json(roles);
   } catch (err) {
     next(err);
   }
 });
 
-/* =============================
-   POST /roles — Criar nova role
-============================= */
+/* ==========================================================
+   🔹 POST /roles — Criar nova role
+========================================================== */
 roleRoutes.post("/roles", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, description,canAccessDashboard  } = req.body;
-    if (!name) return res.status(400).json({ message: "O nome da role é obrigatório." });
+    const { name, description, canAccessDashboard } = req.body;
+
+    if (!name?.trim()) {
+      return res.status(400).json({ message: "O nome da role é obrigatório." });
+    }
 
     const existingRole = await prisma.role.findUnique({ where: { name } });
-    if (existingRole)
+    if (existingRole) {
       return res.status(409).json({ message: "Esta role já existe." });
+    }
 
     const newRole = await prisma.role.create({
-      data: { name, description,canAccessDashboard },
+      data: {
+        name: name.trim(),
+        description: description?.trim() ?? null,
+        canAccessDashboard: Boolean(canAccessDashboard),
+      },
     });
 
     return res.status(201).json({
@@ -47,23 +58,28 @@ roleRoutes.post("/roles", async (req: Request, res: Response, next: NextFunction
   }
 });
 
-/* =============================
-   PUT /roles/:id — Atualizar role
-============================= */
+/* ==========================================================
+   🔹 PUT /roles/:id — Atualizar uma role
+========================================================== */
 roleRoutes.put("/roles/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Number(req.params.id);
+    const id = req.params.id as string; // ✅ força string
     const { name, description, canAccessDashboard } = req.body;
 
     const role = await prisma.role.findUnique({ where: { id } });
-    if (!role) return res.status(404).json({ message: "Role não encontrada." });
+    if (!role) {
+      return res.status(404).json({ message: "Role não encontrada." });
+    }
 
     const updatedRole = await prisma.role.update({
       where: { id },
       data: {
-        name: name ?? role.name,
-        canAccessDashboard: canAccessDashboard?? role.canAccessDashboard,
-        description: description ?? role.description,
+        name: name?.trim() ?? role.name,
+        description: description?.trim() ?? role.description,
+        canAccessDashboard:
+          typeof canAccessDashboard === "boolean"
+            ? canAccessDashboard
+            : role.canAccessDashboard,
       },
     });
 
@@ -76,15 +92,17 @@ roleRoutes.put("/roles/:id", async (req: Request, res: Response, next: NextFunct
   }
 });
 
-/* =============================
-   DELETE /roles/:id — Deletar role
-============================= */
+/* ==========================================================
+   🔹 DELETE /roles/:id — Deletar uma role
+========================================================== */
 roleRoutes.delete("/roles/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Number(req.params.id);
+    const id = req.params.id as string; // ✅ força string
 
     const role = await prisma.role.findUnique({ where: { id } });
-    if (!role) return res.status(404).json({ message: "Role não encontrada." });
+    if (!role) {
+      return res.status(404).json({ message: "Role não encontrada." });
+    }
 
     await prisma.role.delete({ where: { id } });
 

@@ -29,6 +29,7 @@ export default function AddRolePage() {
       setSuccess("Função criada com sucesso!");
       setName("");
       setDescription("");
+      setTimeout(() => router.push("/settings/roles"), 1500);
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.message || "Erro ao criar função.");
