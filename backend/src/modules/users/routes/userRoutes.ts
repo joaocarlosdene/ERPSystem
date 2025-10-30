@@ -1,6 +1,8 @@
 import express, { type Request, type Response, type NextFunction } from "express";
 import prisma from "../../../config/lib/prisma.js";
 import bcrypt from "bcryptjs";
+import { authenticateToken } from "../../../common/middlewares/authMiddlewear.js";
+
 
 const userRoutes = express.Router();
 
@@ -27,6 +29,28 @@ userRoutes.get("/users", async (req: Request, res: Response, next: NextFunction)
     res.json(formattedUsers);
   } catch (error) {
     next(error);
+  }
+});
+
+/* =============================
+   GET /me — Pega o usuario logado
+============================= */
+userRoutes.get("/me", authenticateToken, async (req: Request, res:Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ message: "Usuário não autenticado." });
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, roles: true, isMaster: true },
+    });
+
+    if (!user) return res.status(404).json({ message: "Usuário não encontrado." });
+
+    res.json(user);
+  } catch (err) {
+    console.error("Erro ao buscar usuário logado:", err);
+    res.status(500).json({ message: "Erro interno do servidor." });
   }
 });
 

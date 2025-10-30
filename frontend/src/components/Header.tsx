@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import api from "@/services/api";
 
 const Header: React.FC = () => {
   const [query, setQuery] = useState("");
@@ -11,7 +12,24 @@ const Header: React.FC = () => {
   const [status, setStatus] = useState<"online" | "busy" | "offline">("online");
   const { logout } = useAuth();
 
-  const fullName = "João Silva";
+  //busca e coloca o nome do perfil
+   // ✅ Estado para armazenar nome do usuário logado
+  const [fullName, setFullName] = useState<string>("");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        // Faz a requisição para buscar o usuário logado
+        const response = await api.get("/me"); // ajuste se sua rota for /auth/me
+        setFullName(response.data.name);
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error);
+      }
+    };
+
+    fetchUser();
+  }, []);
+  
   const firstName = fullName.split(" ")[0] || fullName;
 
   const profileRef = useRef<HTMLDivElement | null>(null);
