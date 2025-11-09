@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import { Task } from "../api/calendarApi";
 
@@ -10,6 +10,8 @@ type CalendarProps = {
   setSelectedDate: (date: Dayjs) => void;
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
+  currentUserId: string;
+  fetchTasks: () => Promise<void>;
 };
 
 export default function Calendar({
@@ -18,11 +20,12 @@ export default function Calendar({
   setSelectedDate,
   onEditTask,
   onDeleteTask,
+  currentUserId,
+  fetchTasks,
 }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const today = dayjs();
 
-  // 🔹 Mantém o grid completo (7x6), mas vamos ocultar os dias fora do mês
   const startDay = currentDate.startOf("month").startOf("week");
   const endDay = currentDate.endOf("month").endOf("week");
 
@@ -38,47 +41,44 @@ export default function Calendar({
       dayjs(task.date).isSame(dayjs(date), "day")
     );
 
-    return dayTasks.map((task) => (
-      <div
-        key={task.id}
-        className="bg-blue-500 text-white text-xs rounded px-1 mt-1 flex justify-between items-center"
-      >
-        <span title={task.title}>{task.title}</span>
-       
-        
-      </div>
-    ));
+    return dayTasks.map((task) => {
+      const isCollaborative = task.users?.some(u => u.user.id !== currentUserId);
+      return (
+        <div
+          key={task.id}
+          className={`flex justify-between items-center px-1 mt-1 text-xs rounded ${
+            isCollaborative
+              ? "bg-purple-600 text-white font-semibold"
+              : "bg-blue-500 text-white"
+          }`}
+          title={
+            isCollaborative
+              ? `Colaborativa: ${task.users?.map(u => u.user.name).join(", ")}`
+              : task.title
+          }
+        >
+          <span>{task.title}</span>
+        </div>
+      );
+    });
   };
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      {/* Cabeçalho */}
       <div className="flex justify-between items-center mb-4">
-        <button
-          onClick={() => setCurrentDate(currentDate.subtract(1, "month"))}
-          className="text-gray-600 hover:text-blue-600"
-        >
+        <button onClick={() => setCurrentDate(currentDate.subtract(1, "month"))}>
           {"<"}
         </button>
-        <h2 className="text-xl font-bold capitalize">
-          {currentDate.format("MMMM YYYY")}
-        </h2>
-        <button
-          onClick={() => setCurrentDate(currentDate.add(1, "month"))}
-          className="text-gray-600 hover:text-blue-600"
-        >
-          {">"}
-        </button>
+        <h2 className="text-xl font-bold capitalize">{currentDate.format("MMMM YYYY")}</h2>
+        <button onClick={() => setCurrentDate(currentDate.add(1, "month"))}>{">"}</button>
       </div>
 
-      {/* Dias da semana */}
       <div className="grid grid-cols-7 gap-2 text-center font-semibold mb-2 text-gray-700">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
           <div key={d}>{d}</div>
         ))}
       </div>
 
-      {/* Dias do calendário */}
       <div className="grid grid-cols-7 gap-2 text-center">
         {calendarDays.map((dayItem, index) => {
           const isToday = dayItem.isSame(today, "day");
@@ -88,7 +88,7 @@ export default function Calendar({
           let dayClasses =
             "border p-2 rounded min-h-[80px] flex flex-col transition-colors duration-150 cursor-pointer";
 
-          if (!isCurrentMonth) dayClasses += " opacity-0 pointer-events-none"; // 🔹 Esconde dias de fora do mês
+          if (!isCurrentMonth) dayClasses += " opacity-0 pointer-events-none";
           else if (isToday) dayClasses += " bg-amber-100 border-amber-400 text-amber-700";
           else if (isSelected) dayClasses += " bg-blue-100 border-blue-400 text-blue-700";
           else dayClasses += " hover:bg-gray-100";

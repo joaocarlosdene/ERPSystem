@@ -2,13 +2,14 @@ import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import { authRoutes } from "./modules/auth/routes/authRoutes.js";
-import { userRoutes } from "./modules/users/routes/userRoutes.js";
-import { roleRoutes } from "./modules/role/routes/roleRoutes.js";
-import { errorHandler } from "./common/middlewares/errorHandler.js";
-import { dashboardRoutes } from "./modules/dashboard/routes/dashboardRoutes.js";
-import { validateRoutes } from "./modules/auth/validators/authValidate.js";
-import { calendarRoutes } from "./modules/calendar/routes/calendarRoutes.js";
+import  authRoutes  from "./modules/auth/authRoutes.js";
+import  userRoutes  from "./modules/users/userRoutes.js";
+//import { roleRoutes } from "./modules/role/routes/roleRoutes.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
+import  dashboardRoutes  from "./modules/dashboard/dashboardRoutes.js";
+//import  validateRoutes  from "./modules/auth/authValidators.js";
+import { calendarRoutes } from "./modules/calendar/calendarRoutes.js";
+//import { notificationRoutes } from "./modules/notifications/routes/notificationRoutes.js"
 
 export const app = express();
 
@@ -24,13 +25,14 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Rotas
-app.use( userRoutes);
-app.use("/", roleRoutes);
+app.use("/users", userRoutes);
+//app.use("/", roleRoutes);
 app.use("/auth", authRoutes);
-app.use("/auth", validateRoutes);  // validate /check session
-app.use("/", dashboardRoutes); // protegida
+//app.use("/auth", validateRoutes);  // validate /check session
+app.use("/dashboard", dashboardRoutes); // protegida
 app.use("/calendar", calendarRoutes)
+//app.use("/notifications", notificationRoutes)
 
 
-// Middleware de erros
+// Middleware de erros sempre no final
 app.use(errorHandler);

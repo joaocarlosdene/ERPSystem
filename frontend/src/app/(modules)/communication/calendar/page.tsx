@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import Layout from "@/components/Layout";
 import CalendarComponent from "./components/calendar";
@@ -11,6 +11,7 @@ import {
   getUserCalendars,
   createCalendar,
   deleteTask,
+  getUserTasks
 } from "./api/calendarApi";
 
 export default function CalendarPage() {
@@ -22,6 +23,19 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const currentUserId = "USER_LOGADO_ID_AQUI"; // ⚠️ Substituir pelo ID do usuário logado
+
+  // 🔹 Função para buscar tarefas (do usuário logado)
+  const fetchTasks = useCallback(async (calendarId?: string) => {
+    try {
+      if (!calendarId) return;
+      const data = await getUserTasks(currentUserId);
+      setTasks(data);
+    } catch (err) {
+      console.error("Erro ao buscar tarefas:", err);
+    }
+  }, [currentUserId]);
+
   // =====================
   // CARREGAMENTO INICIAL
   // =====================
@@ -32,20 +46,17 @@ export default function CalendarPage() {
         const cals = await getUserCalendars();
 
         let activeCalendar: Calendar | null = null;
-
         if (cals.length > 0) {
           activeCalendar = cals[cals.length - 1];
         } else {
-          activeCalendar = await createCalendar(
-            `Calendário ${dayjs().format("MMMM YYYY")}`
-          );
+          activeCalendar = await createCalendar(`Calendário ${dayjs().format("MMMM YYYY")}`);
         }
 
         setCalendars([...cals, activeCalendar]);
         setSelectedCalendarId(activeCalendar.id);
 
-        const allTasks = activeCalendar.tasks ?? [];
-        setTasks(allTasks);
+        // Buscar tarefas do usuário logado no calendário selecionado
+        await fetchTasks(activeCalendar.id);
       } catch (err) {
         console.error("Erro ao carregar calendários:", err);
         setError("Não foi possível carregar o calendário.");
@@ -55,13 +66,14 @@ export default function CalendarPage() {
     }
 
     fetchData();
-  }, []);
+  }, [fetchTasks]);
 
   // =====================
   // HANDLERS DE TAREFAS
   // =====================
   const handleAddTask = (task: Task) => {
-    setTasks((prev) => [...prev, task]);
+    // Atualiza tarefas do usuário logado
+    fetchTasks(selectedCalendarId);
     setEditTask(null);
   };
 
@@ -70,42 +82,31 @@ export default function CalendarPage() {
   const handleDeleteTask = async (taskId: string) => {
     if (confirm("Deseja realmente deletar esta tarefa?")) {
       await deleteTask(taskId);
-      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+      fetchTasks(selectedCalendarId);
     }
   };
 
+  if (loading) return (
+    <Layout>
+      <div className="flex items-center justify-center h-[80vh]">Carregando calendário...</div>
+    </Layout>
+  );
+
+  if (error) return (
+    <Layout>
+      <div className="text-center text-red-600 mt-10">{error}</div>
+    </Layout>
+  );
+
+  if (!selectedCalendarId) return (
+    <Layout>
+      <div className="text-center text-gray-500 mt-10">Nenhum calendário encontrado.</div>
+    </Layout>
+  );
+
   // =====================
-  // RENDER
+  // FILTRAR TAREFAS DO DIA
   // =====================
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-[80vh] text-gray-600">
-          Carregando calendário...
-        </div>
-      </Layout>
-    );
-  }
-
-  if (error) {
-    return (
-      <Layout>
-        <div className="text-center text-red-600 mt-10">{error}</div>
-      </Layout>
-    );
-  }
-
-  if (!selectedCalendarId) {
-    return (
-      <Layout>
-        <div className="text-center text-gray-500 mt-10">
-          Nenhum calendário encontrado. Tente recarregar a página.
-        </div>
-      </Layout>
-    );
-  }
-
-  // Filtra e ordena tarefas do dia pelo horário
   const dayTasks = tasks
     .filter((t) => dayjs(t.date).isSame(selectedDate, "day"))
     .sort((a, b) => dayjs(a.date).diff(dayjs(b.date)));
@@ -122,13 +123,13 @@ export default function CalendarPage() {
           setSelectedDate={setSelectedDate}
           onEditTask={handleEditTask}
           onDeleteTask={handleDeleteTask}
+          currentUserId={currentUserId}
+          fetchTasks={() => fetchTasks(selectedCalendarId)}
         />
 
         {/* FORMULÁRIO */}
         <div className="border-t pt-4">
-          <h2 className="font-semibold mb-2">
-            {editTask ? "Editar Tarefa" : "Adicionar Nova Tarefa"}
-          </h2>
+          <h2 className="font-semibold mb-2">{editTask ? "Editar Tarefa" : "Adicionar Nova Tarefa"}</h2>
           <TaskForm
             date={selectedDate.format("YYYY-MM-DD")}
             calendarId={selectedCalendarId}
@@ -155,29 +156,19 @@ export default function CalendarPage() {
                     <th className="px-4 py-3 text-left">Título</th>
                     <th className="px-4 py-3 text-left">Descrição</th>
                     <th className="px-4 py-3 text-left">Prioridade</th>
+                    <th className="px-4 py-3 text-left">Participantes</th>
                     <th className="px-4 py-3 text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {dayTasks.map((task) => (
-                    <tr
-                      key={task.id}
-                      className="hover:bg-gray-800 transition-colors border-t border-gray-800"
-                    >
+                    <tr key={task.id} className="hover:bg-gray-800 transition-colors border-t border-gray-800">
+                      <td className="px-4 py-3 text-gray-300">{dayjs(task.date).format("HH:mm")}</td>
+                      <td className="px-4 py-3 font-medium" style={{ color: task.color }}>{task.title}</td>
+                      <td className="px-4 py-3 text-gray-300">{task.description || "—"}</td>
+                      <td className="px-4 py-3 text-gray-300 capitalize">{task.priority.toLowerCase()}</td>
                       <td className="px-4 py-3 text-gray-300">
-                        {dayjs(task.date).format("HH:mm")}
-                      </td>
-                      <td
-                        className="px-4 py-3 font-medium"
-                        style={{ color: task.color }}
-                      >
-                        {task.title}
-                      </td>
-                      <td className="px-4 py-3 text-gray-300">
-                        {task.description || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-300 capitalize">
-                        {task.priority.toLowerCase()}
+                        {task.users?.map(u => u.user.name).join(", ") || "—"}
                       </td>
                       <td className="px-4 py-3 flex justify-center gap-3">
                         <button

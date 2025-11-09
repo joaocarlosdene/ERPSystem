@@ -1,70 +1,83 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// ===============================================
+// 📘 PRISMA SCHEMA - ERP PROFISSIONAL
+// ===============================================
+//
+// 💡 Este schema foi projetado para:
+// - Alta segurança (hashes de senha e token)
+// - Suporte a multiusuários com permissões e papéis
+// - Sistema de calendário e tarefas (pessoais e compartilhadas)
+// - Auditoria, sessões, notificações e tokens de atualização
+// ===============================================
 
 generator client {
   provider = "prisma-client-js"
-  //output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
- 
+
 // ------------------------------------------------------
-// 🔐 AUTHENTICAÇÃO E CONTROLE DE ACESSO
+// 🔐 USUÁRIOS, PAPÉIS E AUTENTICAÇÃO
 // ------------------------------------------------------
 
 model User {
   id            String           @id @default(cuid())
   name          String
-  email         String        @unique
-  password      String
-  isMaster      Boolean       @default(false) // define o usuário principal do sistema
-  roles         Role[]        @relation("UserRoles") // relação muitos-para-muitos
-  tasks         UserTask[] // relação N:N com Task
-  calendars     Calendar[] // calendários criados pelo usuário
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  sessions      Session[]
-  auditLogs     AuditLog[]
-  refreshTokens RefreshToken[]
+  email         String           @unique
+  passwordHash  String           // ⚙️ Senha com hash (bcrypt, argon2, etc)
+  isMaster      Boolean          @default(false) // 🧠 Usuário principal ou dono do sistema
+  roles         Role[]           @relation("UserRoles") // Relação N:N com Roles
+  tasks         UserTask[]                      // Tarefas atribuídas a este usuário
+  calendars     Calendar[]                      // Calendários criados
+  createdTasks  Task[]           @relation("CreatedTasks") // Tarefas criadas por este usuário
+  notifications Notification[]   @relation("UserNotifications")
+  sessions      Session[]                        // Sessões ativas
+  refreshTokens RefreshToken[]                   // Tokens de atualização
+  auditLogs     AuditLog[]                       // Histórico de ações
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 }
-
-model RefreshToken {
-  id           String       @id @default(cuid())
-  token        String    @unique
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       String
-  expiresAt    DateTime
-  createdAt    DateTime  @default(now())
-  revoked      Boolean   @default(false)
-}
-
-
-model Role {
-  id          String        @id @default(cuid())
-  name        String         @unique
-  active    Boolean  @default(true)
-  description String?
-  canAccessDashboard Boolean @default(false)
-  users       User[]         @relation("UserRoles") // relação muitos-para-muitos
-}
-
 
 // ------------------------------------------------------
-// 🔐 CALENDARIO, TASKS E PRIORIDADES DE TASKS
+// 🧩 PAPÉIS (ROLES) E PERMISSÕES
+// ------------------------------------------------------
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique             // Ex: "ADMIN", "USER", "MANAGER"
+  description String?
+  active      Boolean  @default(true)
+  canAccessDashboard Boolean @default(false)
+  users       User[]   @relation("UserRoles") // Relação inversa N:N
+}
+
+// ------------------------------------------------------
+// 🔁 REFRESH TOKENS (autenticação segura com JWT)
+// ------------------------------------------------------
+model RefreshToken {
+  id           String   @id @default(cuid())
+  tokenHash    String   // 🔐 armazenamos só o hash do token (nunca o valor real)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  revoked      Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+}
+
+// ------------------------------------------------------
+// 📅 CALENDÁRIOS E TAREFAS
 // ------------------------------------------------------
 model Calendar {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
   ownerId   String
-  owner     User     @relation(fields: [ownerId], references: [id])
-  tasks     Task[]
-  createdAt DateTime @default(now())
+  owner     User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  tasks     Task[]                       // Tarefas vinculadas a este calendário
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Task {
@@ -73,21 +86,36 @@ model Task {
   description String?
   date        DateTime
   priority    Priority   @default(MEDIUM)
-  color       String     // ex: "#FF0000" ou "bg-red-500"
+  color       String     // Exemplo: "#FF0000" ou "bg-red-500"
+  
+  // 🔗 Relacionamentos
   calendarId  String
-  calendar    Calendar   @relation(fields: [calendarId], references: [id])
-  users       UserTask[] // usuários atribuídos à tarefa
+  calendar    Calendar   @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  users       UserTask[]                   // Usuários atribuídos à tarefa
+  notifications Notification[] @relation("TaskNotifications")
+
+  // 👤 Usuário criador (quem criou a tarefa)
+  createdById String?
+  createdBy   User? @relation("CreatedTasks", fields: [createdById], references: [id], onDelete: SetNull)
+
   createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
+// ------------------------------------------------------
+// 🔗 RELAÇÃO N:N ENTRE USUÁRIOS E TAREFAS
+// ------------------------------------------------------
 model UserTask {
   userId String
   taskId String
   user   User @relation(fields: [userId], references: [id])
   task   Task @relation(fields: [taskId], references: [id])
-  @@id([userId, taskId])
+  @@id([userId, taskId]) // 🔒 Evita duplicação
 }
 
+// ------------------------------------------------------
+// ⚙️ ENUM DE PRIORIDADES DE TAREFAS
+// ------------------------------------------------------
 enum Priority {
   LOW
   MEDIUM
@@ -95,24 +123,43 @@ enum Priority {
   CRITICAL
 }
 
+// ------------------------------------------------------
+// 🔔 NOTIFICAÇÕES (tarefas, eventos, etc)
+// ------------------------------------------------------
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  taskId    String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-model Session {
-  id          String        @id @default(cuid())
-  userId      String
-  token       String      @unique
-  createdAt   DateTime    @default(now())
-  expiresAt   DateTime
-  user        User        @relation(fields: [userId], references: [id])
+  user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation("TaskNotifications", fields: [taskId], references: [id], onDelete: Cascade)
 }
 
-// Logs de auditoria (quem fez o quê e quando)
+// ------------------------------------------------------
+// 🔐 SESSÕES (usuário logado, token ativo, etc)
+// ------------------------------------------------------
+model Session {
+  id          String     @id @default(cuid())
+  userId      String
+  token       String     @unique
+  createdAt   DateTime   @default(now())
+  expiresAt   DateTime
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ------------------------------------------------------
+// 🧾 LOG DE AUDITORIA (registro de ações)
+// ------------------------------------------------------
 model AuditLog {
-  id          String        @id @default(cuid())
+  id          String     @id @default(cuid())
   userId      String?
-  action      String
-  entity      String?
-  entityId    Int?
+  action      String                       // Ex: "CREATE_TASK", "DELETE_USER"
+  entity      String?                      // Nome da entidade afetada (User, Task, etc)
+  entityId    String?                      // ID da entidade
   timestamp   DateTime   @default(now())
-  details     String?
-  user        User?       @relation(fields: [userId], references: [id])
+  details     String?                      // JSON ou texto com detalhes extras
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
 }

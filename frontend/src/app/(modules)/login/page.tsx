@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { useAuth } from "@/context/AuthContext"; // hook do contexto
-import { useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, user } = useAuth(); // usa login do AuthContext
+  const { login, user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,12 +17,13 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 🔹 Login via AuthContext (aguarda a atualização do estado)
       await login(email, password);
 
-      toast.success("Login realizado com sucesso!");
+    console.log("Usuário logado:", user);
+    console.log("Access Token no localStorage:", localStorage.getItem("accessToken"));
+    console.log("Refresh Token no localStorage:", localStorage.getItem("refreshToken"));
 
-      // 🔹 Redireciona apenas após o contexto atualizar user
+      toast.success("Login realizado com sucesso!");
       router.push("/dashboard");
     } catch (error: any) {
       console.error("Erro no login:", error);
@@ -35,11 +35,9 @@ export default function LoginPage() {
     }
   };
 
-  // Se já estiver logado, redireciona automaticamente
+  // Se já estiver logado, redireciona
   useEffect(() => {
-    if (user) {
-      router.replace("/dashboard");
-    }
+    if (user) router.replace("/dashboard");
   }, [user, router]);
 
   return (
@@ -77,10 +75,9 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-2 px-4 rounded-lg text-white font-semibold transition ${loading
-                ? "bg-blue-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-              }`}
+            className={`w-full py-2 px-4 rounded-lg text-white font-semibold transition ${
+              loading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>

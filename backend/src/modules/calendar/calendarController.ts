@@ -1,11 +1,11 @@
 import { type Request, type Response, type NextFunction } from "express";
-import * as calendarService from "../services/calendarService.js";
-import * as calendarValidator from "../validators/calendarValidator.js";
+import * as calendarService from "./calendarService.js";
+import * as calendarValidator from "./calendarValidator.js";
 
 // GET /calendar
 export async function getUserCalendars(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = req.user!.userId;
+    const userId = (req as any).user?.id;
     const calendars = await calendarService.findCalendarsByUser(userId);
     res.json(calendars);
   } catch (err) {
@@ -16,7 +16,7 @@ export async function getUserCalendars(req: Request, res: Response, next: NextFu
 // POST /calendar
 export async function createCalendar(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = req.user!.userId;
+    const userId = (req as any).user?.id;
     const { name } = req.body;
 
     calendarValidator.validateCalendarName(name);
@@ -85,7 +85,7 @@ export async function deleteTask(req: Request, res: Response, next: NextFunction
 // GET /calendar/user-tasks
 export async function getUserTasks(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = req.user!.userId;
+    const userId = (req as any).user?.id;
     const date = req.query.date as string | undefined;
 
     const tasks = await calendarService.findUserTasks(userId, date);

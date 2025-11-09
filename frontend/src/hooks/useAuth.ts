@@ -7,12 +7,16 @@ export default function useAuthGuard(requiredRoles: string[] = []) {
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) {
-      // Garantir que roles existe
+    // Enquanto estiver carregando, não decide nada
+    if (loading) return;
+
+    if (user) {
       const rolesArray = user.roles || [];
-      const hasAccess = rolesArray.some((role) => requiredRoles.includes(role));
+      const hasAccess =
+        requiredRoles.length === 0 ||
+        rolesArray.some((role) => requiredRoles.includes(role));
       setAuthorized(hasAccess);
-    } else if (!loading && !user) {
+    } else {
       setAuthorized(false);
     }
   }, [user, loading, requiredRoles]);
