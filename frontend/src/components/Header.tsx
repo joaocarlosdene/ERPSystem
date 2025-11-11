@@ -23,25 +23,7 @@ const Header: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
-    // Função para buscar notificações do usuário
-    async function fetchNotifications() {
-      try {
-        const data = await getNotifications();
-        setNotifications(data);
-        setUnreadCount(data.filter((n) => !n.read).length);
-      } catch (err) {
-        console.error("Erro ao buscar notificações:", err);
-      }
-    }
-
-    fetchNotifications();
-
-    // Atualiza notificações a cada 30 segundos
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
+  
   // -------------------------
   // Nome do usuário
   // -------------------------

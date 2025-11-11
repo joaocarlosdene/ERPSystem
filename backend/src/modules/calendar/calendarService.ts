@@ -3,7 +3,7 @@ import prisma from "../../config/lib/prisma.js";
 interface TaskData {
   title: string;
   description?: string;
-  date: string; // string ISO do frontend
+  date: string; // ISO string do frontend
   priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   color: string;
   assignedUserIds?: string[];
@@ -34,39 +34,54 @@ export async function createCalendar(ownerId: string, name: string) {
 /* ==========================================================
    🔹 CRIAR UMA NOVA TAREFA (INDIVIDUAL OU COLABORATIVA + NOTIFICAÇÕES)
 ========================================================== */
-export async function createTask(calendarId: string, taskData: TaskData) {
-  const { title, description, date, priority, color, assignedUserIds } = taskData;
+export async function createTask(
+  calendarId: string,
+  taskData: TaskData & { createdById?: string }
+) {
+  const { title, description, date, priority, color, assignedUserIds = [], createdById } = taskData;
 
-  const dataToCreate: any = {
+  // 🔸 Inclui o criador automaticamente
+  const uniqueUserIds = Array.from(
+    new Set([...assignedUserIds, createdById].filter(Boolean))
+  ) as string[];
+
+  // 🔸 Cria a tarefa com TaskUncheckedCreateInput
+  const taskDataToCreate: any = {
     title,
-    description,
-    date: new Date(date), // converte ISO string em Date
+    date: new Date(date),
     priority,
     color,
     calendarId,
   };
 
-  if (assignedUserIds?.length) {
-    dataToCreate.users = {
-      create: assignedUserIds.map((userId) => ({ userId })),
+  // Inclui optional fields somente se existirem
+  if (description) taskDataToCreate.description = description;
+  if (createdById) taskDataToCreate.createdById = createdById;
+
+  // Inclui usuários somente se houver
+  if (uniqueUserIds.length > 0) {
+    taskDataToCreate.users = {
+      create: uniqueUserIds.map((userId) => ({ userId })),
     };
   }
 
   const task = await prisma.task.create({
-    data: dataToCreate,
-    include: { users: { include: { user: true } }, calendar: true },
+    data: taskDataToCreate,
+    include: {
+      users: { include: { user: true } },
+      calendar: true,
+    },
   });
 
-  // Criar notificações apenas para usuários diferentes do dono
-  if (assignedUserIds?.length) {
-    const notifications = assignedUserIds.map((userId) => ({
-      userId,
-      taskId: task.id,
-      message: `Você foi adicionado à tarefa "${task.title}"`,
-    }));
-    // Evitar duplicidade
+  // 🔹 Notificações apenas para usuários diferentes do criador
+  const notifyUsers = uniqueUserIds.filter((id) => id !== createdById);
+  if (notifyUsers.length) {
     await prisma.notification.createMany({
-      data: notifications,
+      data: notifyUsers.map((userId) => ({
+        userId,
+        taskId: task.id,
+        message: `Você foi adicionado à tarefa "${task.title}"`,
+      })),
       skipDuplicates: true,
     });
   }
@@ -80,7 +95,6 @@ export async function createTask(calendarId: string, taskData: TaskData) {
 export async function updateTask(taskId: string, taskData: TaskData) {
   const { title, description, date, priority, color, assignedUserIds } = taskData;
 
-  // Recuperar tarefa existente
   const task = await prisma.task.findUnique({
     where: { id: taskId },
     include: { users: true },
@@ -90,13 +104,9 @@ export async function updateTask(taskId: string, taskData: TaskData) {
   const oldUserIds = task.users.map((u) => u.userId);
   const newUserIds = assignedUserIds?.filter((id) => !oldUserIds.includes(id)) || [];
 
-  const dataToUpdate: any = {
-    title,
-    description,
-    date: date ? new Date(date) : undefined,
-    priority,
-    color,
-  };
+  const dataToUpdate: any = { title, priority, color };
+  if (description) dataToUpdate.description = description;
+  if (date) dataToUpdate.date = new Date(date);
 
   if (assignedUserIds) {
     dataToUpdate.users = {
@@ -110,15 +120,13 @@ export async function updateTask(taskId: string, taskData: TaskData) {
     include: { users: { include: { user: true } }, calendar: true },
   });
 
-  // Notificar somente novos usuários adicionados
   if (newUserIds.length) {
-    const notifications = newUserIds.map((userId) => ({
-      userId,
-      taskId,
-      message: `Você foi adicionado à tarefa "${updatedTask.title}"`,
-    }));
     await prisma.notification.createMany({
-      data: notifications,
+      data: newUserIds.map((userId) => ({
+        userId,
+        taskId,
+        message: `Você foi adicionado à tarefa "${updatedTask.title}"`,
+      })),
       skipDuplicates: true,
     });
   }
@@ -130,7 +138,6 @@ export async function updateTask(taskId: string, taskData: TaskData) {
    🔹 DELETAR UMA TAREFA
 ========================================================== */
 export async function deleteTask(taskId: string) {
-  // Remover relacionamentos e notificações antes
   await prisma.userTask.deleteMany({ where: { taskId } });
   await prisma.notification.deleteMany({ where: { taskId } });
 

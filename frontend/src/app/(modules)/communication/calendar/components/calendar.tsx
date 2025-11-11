@@ -42,7 +42,8 @@ export default function Calendar({
     );
 
     return dayTasks.map((task) => {
-      const isCollaborative = task.users?.some(u => u.user.id !== currentUserId);
+      const userCount = task.users?.length || 0;
+    const isCollaborative = userCount > 1;
       return (
         <div
           key={task.id}

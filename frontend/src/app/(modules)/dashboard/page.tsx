@@ -45,7 +45,7 @@ export default function DashboardPage() {
     <div>
       <h1>Bem-vindo ao Dashboard</h1>
       <p>Usuário: {user!.id}</p>
-      <p>Roles: {user!.roles.join(", ")}</p>
+      <p>Roles: {(user?.roles ?? []).join(", ")}</p>
       <p>Master: {user!.isMaster ? "Sim" : "Não"}</p>
 
       <h2>Acessos:</h2>

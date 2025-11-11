@@ -32,12 +32,13 @@ export async function createCalendar(req: Request, res: Response, next: NextFunc
 export async function createTask(req: Request, res: Response, next: NextFunction) {
   try {
     const { calendarId } = req.params;
+    const userId = (req as any).user?.id;
 
     if (!calendarId) {
       return res.status(400).json({ message: "ID do calendário é obrigatório." });
     }
 
-    const taskData = req.body;
+    const taskData = { ...req.body, createdById: userId };
     calendarValidator.validateTaskData(taskData);
 
     const task = await calendarService.createTask(calendarId, taskData);
