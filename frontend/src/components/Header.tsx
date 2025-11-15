@@ -23,23 +23,19 @@ const Header: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  
+
   // -------------------------
   // Nome do usuário
   // -------------------------
   const [fullName, setFullName] = useState<string>("");
 
+  const { user } = useAuth();
+
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await api.get("/users/me"); // Ajuste se a rota for diferente
-        setFullName(response.data.name);
-      } catch (error) {
-        console.error("Erro ao buscar usuário:", error);
-      }
-    };
-    fetchUser();
-  }, []);
+    if (!user) return;
+    setFullName(user.name);
+  }, [user]);
+
 
   const firstName = fullName.split(" ")[0] || fullName;
 
@@ -74,11 +70,11 @@ const Header: React.FC = () => {
 
   const filteredResults = query
     ? menuItems
-        .map((menu) => ({
-          section: menu.section,
-          items: menu.items.filter((i) => i.toLowerCase().includes(query.toLowerCase())),
-        }))
-        .filter((menu) => menu.items.length > 0)
+      .map((menu) => ({
+        section: menu.section,
+        items: menu.items.filter((i) => i.toLowerCase().includes(query.toLowerCase())),
+      }))
+      .filter((menu) => menu.items.length > 0)
     : [];
 
   // -------------------------
@@ -90,7 +86,7 @@ const Header: React.FC = () => {
       <div className="relative w-1/3">
         <div className="flex items-center bg-gray-800/70 rounded-lg px-3 py-1 backdrop-blur-sm border border-gray-700/40 hover:border-blue-500/40 transition">
           <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M12.9 14.32a8 8 0 111.414-1.414l4.387 4.387a1 1 0 01-1.414 1.414l-4.387-4.387zM14 8a6 6 0 11-12 0 6 6 0 0112 0z" clipRule="evenodd"/>
+            <path fillRule="evenodd" d="M12.9 14.32a8 8 0 111.414-1.414l4.387 4.387a1 1 0 01-1.414 1.414l-4.387-4.387zM14 8a6 6 0 11-12 0 6 6 0 0112 0z" clipRule="evenodd" />
           </svg>
           <input
             type="text"
@@ -139,7 +135,7 @@ const Header: React.FC = () => {
             className="hover:text-blue-400 transition relative"
           >
             <svg className="w-5 h-5 text-gray-300 hover:text-blue-400 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405M19 13V8a7 7 0 00-14 0v5l-1.405 1.405A2.032 2.032 0 003 17h18a2.032 2.032 0 00-.595-1.405z"/>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405M19 13V8a7 7 0 00-14 0v5l-1.405 1.405A2.032 2.032 0 003 17h18a2.032 2.032 0 00-.595-1.405z" />
             </svg>
 
             {/* Bolinha vermelha para notificações não lidas */}
@@ -171,7 +167,7 @@ const Header: React.FC = () => {
         <div ref={msgRef} className="relative">
           <button onClick={(e) => { e.stopPropagation(); setShowMessages((s) => !s); setShowNotifications(false); setShowProfile(false); }} aria-label="Mensagens" className="hover:text-blue-400 transition">
             <svg className="w-5 h-5 text-gray-300 hover:text-blue-400 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4z"/>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4z" />
             </svg>
           </button>
           {showMessages && (
@@ -186,8 +182,8 @@ const Header: React.FC = () => {
         <div ref={profileRef} className="relative flex items-center">
           <button onClick={(e) => { e.stopPropagation(); setShowProfile((s) => !s); setShowNotifications(false); setShowMessages(false); }} className="flex items-center gap-2 hover:text-blue-400 transition">
             <div className="relative">
-              <img src="/avatar.png" alt="Perfil" className="w-5 h-5 rounded-full border border-gray-700/60 hover:border-blue-500/60 transition"/>
-              <span className={`absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full border border-gray-900 ${status === "online" ? "bg-green-500" : status === "busy" ? "bg-red-500" : "bg-gray-500"}`}/>
+              <img src="/avatar.png" alt="Perfil" className="w-5 h-5 rounded-full border border-gray-700/60 hover:border-blue-500/60 transition" />
+              <span className={`absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full border border-gray-900 ${status === "online" ? "bg-green-500" : status === "busy" ? "bg-red-500" : "bg-gray-500"}`} />
             </div>
             <span className="text-sm text-gray-300 font-medium hidden sm:inline">{firstName}</span>
           </button>

@@ -8,7 +8,7 @@ export interface CreateUserDTO {
   email: string;
   password: string;
   isMaster?: boolean;
-  roles?: string[];
+  roles?: string[]; // IDs ou nomes
 }
 
 export interface UpdateUserDTO {
@@ -16,17 +16,17 @@ export interface UpdateUserDTO {
   email?: string;
   password?: string;
   isMaster?: boolean;
-  roles?: string[];
+  roles?: string[]; // IDs ou nomes
 }
 
 /* =============================
    GET /users — Listar todos os usuários
 ============================= */
-export async function getAll(): Promise<
-  Pick<User, "id" | "name" | "email" | "isMaster" | "createdAt">[]
-> {
+export async function getAll() {
   const users = await prisma.user.findMany({
-    include: { roles: { select: { name: true } } },
+    include: {
+      roles: { select: { id: true, name: true } },
+    },
   });
 
   return users.map(u => ({
@@ -38,20 +38,42 @@ export async function getAll(): Promise<
     roles: u.roles.map(r => r.name),
   }));
 }
+
 /* =============================
    GET /me — Pega o usuário logado
 ============================= */
 export async function getMe(userId: string) {
-  const user = await prisma.user.findUnique({
+  return prisma.user.findUnique({
     where: { id: userId },
     select: {
       id: true,
       name: true,
       email: true,
-      roles: { select: { name: true } },
+      isMaster: true,
+      roles: { select: { id: true, name: true } },
     },
   });
-  return user;
+}
+
+/* =============================
+   Função auxiliar para mapear roles
+============================= */
+async function mapRoles(roles?: string[]) {
+  if (!roles || roles.length === 0) return undefined;
+
+  const dbRoles = await prisma.role.findMany({
+    where: {
+      OR: roles.map(r => ({
+        id: r,
+      })),
+    },
+  });
+
+  if (dbRoles.length === 0) {
+    throw new Error("Nenhuma role informada foi encontrada.");
+  }
+
+  return dbRoles.map(r => ({ id: r.id }));
 }
 
 /* =============================
@@ -70,35 +92,58 @@ export async function createUser(data: CreateUserDTO) {
     isMaster: data.isMaster ?? false,
   };
 
-  if (data.roles && data.roles.length > 0) {
-    userData.roles = { connect: data.roles.map(id => ({ id })) };
+  if (data.roles) {
+    userData.roles = { connect: await mapRoles(data.roles) };
   }
 
-  return prisma.user.create({ data: userData, include: { roles: true } });
+  const newUser = await prisma.user.create({
+    data: userData,
+    include: { roles: true },
+  });
+
+  return {
+    id: newUser.id,
+    name: newUser.name,
+    email: newUser.email,
+    isMaster: newUser.isMaster,
+    roles: newUser.roles.map(r => r.name),
+  };
 }
 
 /* =============================
    PUT /users/:id — Atualizar um usuário
 ============================= */
 export async function updateUser(id: string, data: UpdateUserDTO) {
-  const updatedData: any = { ...data };
+  const updatedData: any = {};
+
+  if (data.name) updatedData.name = data.name;
+  if (data.email) updatedData.email = data.email;
+  if (data.isMaster !== undefined) updatedData.isMaster = data.isMaster;
 
   if (data.password) {
     updatedData.passwordHash = await bcrypt.hash(data.password, 12);
-    delete updatedData.password;
   }
 
   if (data.roles) {
-    updatedData.roles = { set: data.roles.map(id => ({ id })) };
+    updatedData.roles = {
+      set: await mapRoles(data.roles),
+    };
   }
 
-  return prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id },
     data: updatedData,
     include: { roles: true },
   });
-}
 
+  return {
+    id: updated.id,
+    name: updated.name,
+    email: updated.email,
+    isMaster: updated.isMaster,
+    roles: updated.roles.map(r => r.name),
+  };
+}
 
 /* =============================
    DELETE /users/:id — Deletar um usuário

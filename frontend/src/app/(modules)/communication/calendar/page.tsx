@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import dayjs, { Dayjs } from "dayjs";
 import Layout from "@/components/Layout";
 import CalendarComponent from "./components/calendar";
 import TaskForm from "./components/taskform";
+
 import {
   Task,
   Calendar,
@@ -13,9 +15,13 @@ import {
   deleteTask,
   getUserTasks
 } from "./api/calendarApi";
+
 import { useAuth } from "@/context/AuthContext";
 
 export default function CalendarPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
@@ -24,32 +30,46 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { user: currentUser } = useAuth(); // ✅ pega usuário logado do contexto
+  // Se o usuário não estiver autenticado, redireciona
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/login");
+    }
+  }, [authLoading, user, router]);
 
-  // Buscar tarefas do usuário logado
+  // =============================
+  // Buscar tarefas
+  // =============================
   const fetchTasks = useCallback(async () => {
     try {
-      const data = await getUserTasks(); // pega todas as tarefas do usuário
+      const data = await getUserTasks();
       setTasks(data);
     } catch (err) {
       console.error("Erro ao buscar tarefas:", err);
     }
   }, []);
 
-  // Carregar calendários e tarefas iniciais
+  // =============================
+  // Carregar calendários
+  // =============================
   useEffect(() => {
+    if (authLoading) return; // espera carregar usuário/token
+    if (!user) return; // sem usuário → não executa
+
     async function fetchData() {
       try {
         setLoading(true);
 
-        // Buscar calendários do usuário
         const cals = await getUserCalendars();
 
         let activeCalendar: Calendar | null = null;
+
         if (cals.length > 0) {
           activeCalendar = cals[cals.length - 1];
         } else {
-          activeCalendar = await createCalendar(`Calendário ${dayjs().format("MMMM YYYY")}`);
+          activeCalendar = await createCalendar(
+            `Calendário ${dayjs().format("MMMM YYYY")}`
+          );
         }
 
         setCalendars(cals);
@@ -65,18 +85,18 @@ export default function CalendarPage() {
     }
 
     fetchData();
-  }, [fetchTasks]);
+  }, [authLoading, user, fetchTasks]);
 
-  // Adiciona ou atualiza tarefas
+  // =============================
+  // Funções de tarefa
+  // =============================
   const handleAddTask = async () => {
     await fetchTasks();
     setEditTask(null);
   };
 
-  // Editar tarefa
   const handleEditTask = (task: Task) => setEditTask(task);
 
-  // Deletar tarefa
   const handleDeleteTask = async (taskId: string) => {
     if (confirm("Deseja realmente deletar esta tarefa?")) {
       await deleteTask(taskId);
@@ -84,21 +104,29 @@ export default function CalendarPage() {
     }
   };
 
-  if (loading)
+  // =============================
+  // Renderizações
+  // =============================
+  if (authLoading || loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-[80vh]">Carregando calendário...</div>
+        <div className="flex items-center justify-center h-[80vh]">
+          Carregando calendário...
+        </div>
       </Layout>
     );
+  }
 
-  if (error)
+  if (error) {
     return (
       <Layout>
         <div className="text-center text-red-600 mt-10">{error}</div>
       </Layout>
     );
+  }
 
-  // Filtra tarefas do dia selecionado
+  if (!user) return null; // Apenas por segurança extra
+
   const dayTasks = tasks
     .filter((t) => dayjs(t.date).isSame(selectedDate, "day"))
     .sort((a, b) => dayjs(a.date).diff(dayjs(b.date)));
@@ -108,18 +136,17 @@ export default function CalendarPage() {
       <div className="p-4 space-y-4">
         <h1 className="text-2xl font-bold mb-2">Calendário de Tarefas</h1>
 
-        {/* CALENDÁRIO */}
         <CalendarComponent
           tasks={tasks}
           selectedDate={selectedDate}
           setSelectedDate={setSelectedDate}
           onEditTask={handleEditTask}
           onDeleteTask={handleDeleteTask}
-          currentUserId={currentUser?.id || ""} // ✅ passa usuário logado
+          currentUserId={user.id}
           fetchTasks={fetchTasks}
         />
 
-        {/* FORMULÁRIO */}
+        {/* FORM */}
         <div className="border-t pt-4">
           <h2 className="font-semibold mb-2">
             {editTask ? "Editar Tarefa" : "Adicionar Nova Tarefa"}
@@ -128,12 +155,12 @@ export default function CalendarPage() {
             date={selectedDate.format("YYYY-MM-DD")}
             calendarId={selectedCalendarId}
             onTaskAdded={handleAddTask}
-            editTask={editTask || undefined}
+            editTask={editTask ?? undefined}
             onCancelEdit={() => setEditTask(null)}
           />
         </div>
 
-        {/* LISTA DE TAREFAS */}
+        {/* LIST */}
         <div className="border-t pt-6">
           <h2 className="text-xl font-semibold text-blue-500 mb-4">
             Tarefas de {selectedDate.format("DD/MM/YYYY")}
@@ -163,11 +190,18 @@ export default function CalendarPage() {
                       <td className="px-4 py-3 text-gray-300">
                         {dayjs(task.date).format("HH:mm")}
                       </td>
-                      <td className="px-4 py-3 font-medium" style={{ color: task.color }}>
+                      <td
+                        className="px-4 py-3 font-medium"
+                        style={{ color: task.color }}
+                      >
                         {task.title}
                       </td>
-                      <td className="px-4 py-3 text-gray-300">{task.description || "—"}</td>
-                      <td className="px-4 py-3 text-gray-300 capitalize">{task.priority.toLowerCase()}</td>
+                      <td className="px-4 py-3 text-gray-300">
+                        {task.description || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-gray-300 capitalize">
+                        {task.priority.toLowerCase()}
+                      </td>
                       <td className="px-4 py-3 text-gray-300">
                         {task.users?.map((u) => u.user.name).join(", ") || "—"}
                       </td>

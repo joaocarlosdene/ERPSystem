@@ -37,17 +37,15 @@ export async function verifyRefreshToken(refreshToken: string) {
       where: { userId: payload.userId, revoked: false },
     });
 
-    // Verifica se algum hash do banco bate com o token recebido
-    const validToken = await Promise.any(
-      tokens.map(async (token) => {
-        const match = await bcrypt.compare(refreshToken, token.tokenHash);
-        return match ? token : null;
-      })
-    ).catch(() => null);
+    // Compara sequencialmente (sem Promise.any)
+    for (const token of tokens) {
+      const match = await bcrypt.compare(refreshToken, token.tokenHash);
+      if (match) {
+        return payload.userId;
+      }
+    }
 
-    if (!validToken) throw new Error("Refresh token inválido ou revogado");
-
-    return payload.userId;
+    throw new Error("Refresh token inválido ou revogado");
   } catch {
     throw new Error("Refresh token inválido ou expirado");
   }

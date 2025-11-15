@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, user } = useAuth();
+  const { login, user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,27 +18,24 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-
-    console.log("Usuário logado:", user);
-    console.log("Access Token no localStorage:", localStorage.getItem("accessToken"));
-    console.log("Refresh Token no localStorage:", localStorage.getItem("refreshToken"));
-
       toast.success("Login realizado com sucesso!");
-      router.push("/dashboard");
+      router.replace("/dashboard");
     } catch (error: any) {
       console.error("Erro no login:", error);
       toast.error(
-        error.response?.data?.message || "Falha ao fazer login. Verifique suas credenciais."
+        error?.response?.data?.message || "Falha ao fazer login. Verifique suas credenciais."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // Se já estiver logado, redireciona
   useEffect(() => {
-    if (user) router.replace("/dashboard");
-  }, [user, router]);
+    // Só redireciona se o auth já terminou o refresh e usuário existe
+    if (!authLoading && user) {
+      router.replace("/dashboard");
+    }
+  }, [user, authLoading, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
