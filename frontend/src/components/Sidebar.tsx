@@ -80,6 +80,12 @@ const menu: MenuItem[] = [
     title: "Comunicacao",
     subItems: [
       { label: "Chat Interno", path: "/comunicacao/compras" },
+      { label: "Tarefas", path: "/comunicacao/vendas" },
+    ]
+  },
+  {
+    title: "Agenda",
+    subItems: [
       { label: "Calendario", path: "/communication/calendar" },
       { label: "Tarefas", path: "/comunicacao/vendas" },
     ]
@@ -106,7 +112,13 @@ const Sidebar: React.FC = () => {
         {menu.map((item) => (
           <div key={item.title} className="border-b border-gray-800">
             <button
-              onClick={() => setOpen(open === item.title ? null : item.title)}
+              onClick={() => {
+                if (item.path) {
+                  router.push(item.path); // Navega se tiver path
+                } else {
+                  setOpen(open === item.title ? null : item.title); // Alterna submenu
+                }
+              }}
               className="w-full text-left px-4 py-3 hover:bg-gray-800 flex justify-between items-center"
             >
               <span>{item.title}</span>
