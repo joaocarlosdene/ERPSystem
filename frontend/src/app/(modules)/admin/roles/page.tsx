@@ -63,7 +63,7 @@ export default function RolesPage() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold text-blue-400">Roles</h1>
           <button
-            onClick={() => router.push("/settings/addroles")}
+            onClick={() => router.push("/admin/roles/addroles")}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-white transition"
           >
             <Plus size={18} /> Adicionar Role

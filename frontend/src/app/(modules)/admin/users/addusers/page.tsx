@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/services/api";
+import  api  from "@/services/api";
 import Layout from "@/components/Layout";
 
 export default function CreateUserPage() {
@@ -80,7 +80,7 @@ export default function CreateUserPage() {
       });
 
       setSuccess("Usuário criado com sucesso!");
-      setTimeout(() => router.push("/settings/users"), 1500);
+      setTimeout(() => router.push("/admin/users"), 1500);
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
@@ -262,7 +262,7 @@ export default function CreateUserPage() {
 
             <button
               type="button"
-              onClick={() => router.push("/settings/users")}
+              onClick={() => router.push("/admin/users")}
               className="flex-1 py-2 px-4 rounded-lg text-white font-semibold bg-red-600 hover:bg-red-700 transition"
             >
               Cancelar

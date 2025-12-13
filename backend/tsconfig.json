@@ -8,7 +8,7 @@
     "strict": true,
     "skipLibCheck": true,
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": ".",
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
@@ -25,6 +25,6 @@
     "types": ["node"],
 
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "prisma.config.js"],
   "exclude": ["node_modules", "dist"]
 }

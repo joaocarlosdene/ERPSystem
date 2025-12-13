@@ -29,7 +29,7 @@ export default function AddRolePage() {
       setSuccess("Função criada com sucesso!");
       setName("");
       setDescription("");
-      setTimeout(() => router.push("/settings/roles"), 1500);
+      setTimeout(() => router.push("/admin/roles"), 1500);
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.message || "Erro ao criar função.");
@@ -104,7 +104,7 @@ export default function AddRolePage() {
 
             <button
               type="button"
-              onClick={() => router.push("/settings/roles")}
+              onClick={() => router.push("/admin/roles")}
               className="flex-1 py-2 px-4 rounded-lg text-white font-semibold bg-red-600 hover:bg-red-700 transition"
             >
               Cancelar

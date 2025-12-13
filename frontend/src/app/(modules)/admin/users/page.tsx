@@ -77,7 +77,7 @@ const filteredUsuarios = usuarios.filter((user) => {
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-semibold text-blue-400">Usuários</h1>
           <button
-            onClick={() => router.push("/settings/addusers")}
+            onClick={() => router.push("/admin/users/addusers")}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-white transition"
           >
             <Plus size={18} /> Adicionar Usuário

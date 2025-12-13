@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getNotifications, markAsRead, type Notification } from "../communication/calendar/api/notificationApi";
+import { getNotifications, markAsRead, type Notification } from "../colaboracao/calendar/api/notificationApi";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 

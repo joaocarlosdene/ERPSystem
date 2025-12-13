@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
-import { getNotifications, type Notification } from "../app/(modules)/communication/calendar/api/notificationApi";
+import { getNotifications, type Notification } from "../app/(modules)/colaboracao/calendar/api/notificationApi";
 
 const Header: React.FC = () => {
   // -------------------------
